@@ -1,28 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
 
-# # 1 Business Problem
-
-# - Which product categories has lower reviews / maybe inferior products? (ie. electronics, iPad)
-# - Which product have higher reviews / maybe superior products?
-#     
-# Business solutions:
-# - **Which products should be kept, dropped from Amazon's product roster (which ones are junk?)**
-# - **Also: can we associate positive and negative words/sentiments for each product in Amazon's Catalog**
-# - By using Sentiment analysis, can we predict scores for reviews based on certain words
-# 
-# This dataset is based on Amazon branded/Amazon manufactured products only, and Customer satisfaction with Amazon products seem to be the main focus here.
-# 
-# Potential suggestion for product reviews:
-# <br>Product X is highly rated on the market, it seems most people like its lightweight sleek design and fast speeds. Most products that were associated with negative reviews seemed to indicate that they were too heavy and they couldn't fit them in the bags. We suggest that next gen models for e-readers are lightweight and portable, based on this data we've looked at.
-# 
-# Assumptions:
-# - We're assuming that sample size of 30K examples are sufficient to represent the entire population of sales/reviews
-# - We're assuming that the information we find in the text reviews of each product will be rich enough to train a sentiment analysis classifier with accuracy (hopefully) > 70%
-
-# # 2 Quick Look at the Raw Data
-
-# In[2]:
 
 
 import pandas as pd
@@ -54,25 +30,14 @@ data = df.copy()
 data.describe()
 
 
-# Based on the descriptive statistics above, we see the following:
-# - Average review score of 4.58, with low standard deviation
-#     - Most review are positive from 2nd quartile onwards
-# - The average for number of reviews helpful (reviews.numHelpful) is 0.6 but high standard deviation
-#     - The data are pretty spread out around the mean, and since can't have negative people finding something helpful, then this is only on the right tail side
-#     - The range of most reviews will be between 0-13 people finding helpful (reviews.numHelpful)
-# - The most helpful review was helpful to 814 people
-#     - This could be a detailed, rich review that will be worth looking at
-
-# In[4]:
+:
 
 
 data.info()
 
 
-# Based on the information above:
-# - Drop reviews.userCity, reviews.userProvince, reviews.id, and reviews.didPurchase since these values are floats (for exploratory analysis only)
-# - Not every category have maximum number of values in comparison to total number of values
-# - reviews.text category has minimum missing data (34659/34660) -> Good news!
+# - Drop reviews.userCity, reviews.userProvince, reviews.id, and reviews.didPurchase since these values are floats
+
 # - We need to clean up the name column by referencing asins (unique products) since we have 7000 missing values
 
 # In[5]:
@@ -93,25 +58,21 @@ print("Number of Unique ASINs: " + str(asins_unique))
 # In[8]:
 
 
-data.hist(bins=50, figsize=(20,15)) # builds histogram and set the number of bins and fig size (width, height)
-plt.show()
+#data.hist(bins=50, figsize=(20,15)) # builds histogram and set the number of bins and fig size (width, height)
+#plt.show()
 
 
-# Based on the distributions above:
-# - reviews.numHelpful: Outliers in this case are valuable, so we may want to weight reviews that had more than 50+ people who find them helpful
-# - reviews.rating: Majority of examples were rated highly (looking at rating distribution). There is twice amount of 5 star ratings than the others ratings combined
+
 
 # # 3 Split into Train/Test
 
-# - Before we explore the dataset we're going to split it into training set and test sets
-# - Our goal is to eventually train a sentiment analysis classifier
-# - Since the majority of reviews are positive (5 stars), we will need to do a stratified split on the reviews score to ensure that we don't train the classifier on imbalanced data
-# - To use sklearn's `Stratified ShuffleSplit` class, we're going to remove all samples that have NAN in review score, then covert all review scores to `integer` datatype
+
+
 
 # In[9]:
 
 
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import StratifiedShuffleSplit#To use sklearn's `Stratified ShuffleSplit` class, we're going to remove all samples that have NAN in review score, then covert all review scores to `integer` datatype
 print("Before {}".format(len(data)))
 dataAfter = data.dropna(subset=["reviews.rating"]) # removes all NAN in reviews.rating
 print("After {}".format(len(dataAfter)))
@@ -327,10 +288,6 @@ plt.scatter("asins", "reviews.rating", data=table)
 table.corr()
 
 
-# From our analysis in data exploration above between ASINs and reviews.rating, we discovered that there are many ASINs with low occurrence that have high variances, as a result we concluded that theses low occurrence ASINs are not significant in our analysis given the low sample size.
-# <br>
-# <br>
-# Similarly in our correlation analysis between ASINs and reviews.rating, we see that there is almost no correlation which is consistent with our findings.
 
 # # 6 Sentiment Analysis
 
@@ -371,18 +328,7 @@ print(len(X_train), len(X_test))
 
 # ## 6.2 Extract Features
 
-# Here we will turn content into numerical feature vectors using the **Bag of Words** strategy:
-# - Assign fixed integer id to each word occurrence (integer indices to word occurrence dictionary)
-# - X[i,j] where i is the integer indices, j is the word occurrence, and X is an array of words (our training set)
-# <br>
-# <br>
-# 
-# In order to implement the **Bag of Words** strategy, we will use SciKit-Learn's **CountVectorizer** to performs the following:
-# - Text preprocessing:
-#     - Tokenization (breaking sentences into words)
-#     - Stopwords (filtering "the", "are", etc)
-# - Occurrence counting (builds a dictionary of features from integer indices with word occurrences)
-# - Feature Vector (converts the dictionary of text documents into a feature vector)
+
 
 # In[36]:
 
@@ -418,9 +364,9 @@ X_train_tfidf.shape
 
 # ## 6.3 Building a Pipeline from the Extracted Features
 
-# We will use **Multinominal Naive Bayes** as our Classifier
+# We will use Multinominal Naive Bayes as our Classifier
 # - Multinominal Niave Bayes is most suitable for word counts where data are typically represented as **word vector counts** (number of times outcome number X[i,j] is observed over the n trials), while also ignoring non-occurrences of a feature i
-# - Naive Bayes is a simplified version of Bayes Theorem, where all features are assumed conditioned independent to each other (the classifiers), P(x|y) where x is the feature and y is the classifier
+
 
 # In[39]:
 
@@ -441,10 +387,7 @@ predictedMultiNB = clf_multiNB_pipe.predict(X_test)
 np.mean(predictedMultiNB == X_test_targetSentiment)
 
 
-# Here we see that our Multinominal Naive Bayes Classifier has a 93.45% accuracy level based on the features. 
-# <br>
-# <br>
-# Next we will conduct the following:
+
 # - Test other models
 # - Fine tune the best models to avoid over-fitting
 
@@ -505,21 +448,7 @@ predictedRandomForest = clf_randomForest_pipe.predict(X_test)
 np.mean(predictedRandomForest == X_test_targetSentiment)
 
 
-# Looks like all the models performed very well (>90%), and we will use the **Support Vector Machine Classifier** since it has the highest accuracy level at **93.94%**.
-# <br>
-# Now we will fine tune the Support Vector Machine model (Linear_SVC) to avoid any potential over-fitting.
 
-# ## 6.6 Fine tuning the Support Vector Machine Classifier
-
-# - Here we will run a **Grid Search** of the best parameters on a grid of possible values, instead of tweaking the parameters of various components of the chain (ie. use_idf in tfidftransformer)
-# - We will also run the grid search with LinearSVC classifier pipeline, parameters and cpu core maximization
-# - Then we will fit the grid search to our training data set
-# - Next we will use our final classifier (after fine-tuning) to test some arbitrary reviews
-# - Finally we will test the accuracy of our final classifier (after fine-tuning)
-# 
-# Note that **Support Vector Machines** is very suitable for classification by measuring extreme values between classes, to differentiate the worst case scenarios so that it can classify between Positive, Neutral and Negative correctly.
-
-# In[47]:
 
 
 from sklearn.model_selection import GridSearchCV
@@ -576,39 +505,8 @@ print(classification_report(X_test_targetSentiment, predictedGS_clf_LinearSVC_pi
 print('Accuracy: {}'. format(accuracy_score(X_test_targetSentiment, predictedGS_clf_LinearSVC_pipe)))
 
 
-# Below is the summary of the classification report:
-# - Precision: determines how many objects selected were correct
-# - Recall: tells you how many of the objects that should have been selected were actually selected
-# - F1 score measures the weights of recall and precision (1 means precision and recall are equally important, 0 otherwise)
-# - Support is the number of occurrences of each class
-# 
-# The results in this analysis confirms our previous data exploration analysis, where the data are very skewed to the positive reviews as shown by the lower support counts in the classification report. Also, both neutral and negative reviews has large standard deviation with small frequencies, which we would not consider significant as shown by the lower precision, recall and F1 scores in the classification report.
-# 
-# However, despite that Neutral and Negative results are not very strong predictors in this data set, it still shows a 94.08% accuracy level in predicting the sentiment analysis, which we tested and worked very well when inputting arbitrary text (new_text). Therefore, we are comfortable here with the skewed data set. Also, as we continue to input new dataset in the future that is more balanced, this model will then re-adjust to a more balanced classifier which will increase the accuracy level.
-# 
-# <u>Note</u>: The first row will be ignored as we previously replaced all NAN with " ". We tried to remove this row when we first imported the raw data, but Pandas `DataFrame` did not like this row removed when we tried to drop all NAN (before stratifying and splitting the dataset). As a result, replacing the NAN with " " was the best workaround and the first row will be ignored in this analysis.
-# 
-# Finally, the overall result here explains that the products in this dataset are generally positively rated.
-
-# In[51]:
 
 
 from sklearn import metrics
 metrics.confusion_matrix(X_test_targetSentiment, predictedGS_clf_LinearSVC_pipe)
 
-
-# <u>Note</u>: The first row and column will be ignored as we previously replaced all NAN with " ". This is the same situation explained above in the classification report.
-# 
-# By considering only row 2-4 and column 2-4 labeled as negative, neutral and positive, we see that positive sentiment can sometimes be confused for one another with neutral and negative ratings, with scores of 246 and 104 respectively. However, based on the overall number of significant positive sentiment at a score 6445, then confusion score of 246 and 104 for neutral and negative ratings respectively are considered insignificant.
-# 
-# Also, this is a result of positively skewed dataset, which is consistent with both our data exploration and sentiment analysis. Therefore, we conclude that the products in this dataset are generally positively rated, and should be kept from Amazon's product roster.
-
-# # 7 Answering the Questions
-
-# From the analysis above in the classification report, we can see that products with lower reviews are not significant enough to predict these lower rated products are inferior. On the other hand, products that are highly rated are considered superior products, which also performs well and should continue to sell at a high level.
-# 
-# As a result, we need to input more data in order to consider the significance of lower rated product, in order to determine which products should be dropped from Amazon's product roster.
-# 
-# The good news is that despite the skewed dataset, we were still able to build a robust Sentiment Analysis machine learning system to determine if the reviews are positive or negative. This is possible as the machine learning system was able to learn from all the positive, neutral and negative reviews, and fine tune the algorithm in order to avoid bias sentiments. 
-# 
-# In conclusion, although we need more data to balance out the lower rated products to consider their significance, however we were still able to successfully associate positive, neutral and negative sentiments for each product in Amazon's Catalog.
